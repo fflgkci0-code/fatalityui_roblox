@@ -4477,7 +4477,7 @@ function Fatality.new(Window: Window)
 	HeaderText.Font = Enum.Font.GothamBold
 	HeaderText.Text = Window.Name
 	HeaderText.TextColor3 = Color3.fromRGB(229, 229, 229)
-	HeaderText.TextSize = 16.000
+	HeaderText.TextSize = 17.000
 	HeaderText.TextStrokeColor3 = Color3.fromRGB(205, 67, 218)
 	HeaderText.TextStrokeTransparency = 0.640
 
