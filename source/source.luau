@@ -6364,34 +6364,6 @@ function Fatality.new(Window: Window)
 		ToggleUI(b);
 	end;
 
-	Fatal._IndicatorContainer = nil;
-
-	function Fatal:CreateIndicatorContainer(Config)
-		if Fatal._IndicatorContainer then
-			return Fatal._IndicatorContainer
-		end
-		
-		Fatal._IndicatorContainer = Fatality:CreateIndicator(Config)
-		return Fatal._IndicatorContainer
-	end
-
-	function Fatal:AddIndicator(Config)
-		if not Fatal._IndicatorContainer then
-			Fatal._IndicatorContainer = Fatality:CreateIndicator({
-				Title = Window.Name,
-				Position = UDim2.new(0, 10, 0.5, 0),
-				ShowTitle = true,
-				Draggable = true
-			})
-		end
-		
-		return Fatal._IndicatorContainer:AddIndicator(Config)
-	end
-
-	function Fatal:GetIndicatorContainer()
-		return Fatal._IndicatorContainer
-	end
-
 	ToggleUI(true);
 
 	return Fatal;
