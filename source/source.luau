@@ -6879,11 +6879,11 @@ function Fatality:CreateIndicator(Config)
 		local CurrentKeybind = IndicatorConfig.Keybind
 		local CurrentMode = IndicatorConfig.Mode
 
-		-- Main Indicator Frame (Brown rounded rectangle)
+		-- Main Indicator Frame
 		local IndicatorFrame = Instance.new("Frame")
 		IndicatorFrame.Name = Fatality:RandomString()
 		IndicatorFrame.Parent = ContainerFrame
-		IndicatorFrame.BackgroundColor3 = Color3.fromRGB(43, 31, 26) -- #2b1f1a
+		IndicatorFrame.BackgroundColor3 = Color3.fromRGB(43, 31, 26)
 		IndicatorFrame.BorderSizePixel = 0
 		IndicatorFrame.Size = UDim2.new(0, 0, 0, 32)
 		IndicatorFrame.AutomaticSize = Enum.AutomaticSize.X
@@ -6896,7 +6896,7 @@ function Fatality:CreateIndicator(Config)
 		UICorner.Parent = IndicatorFrame
 
 		local UIStroke = Instance.new("UIStroke")
-		UIStroke.Color = Color3.fromRGB(58, 42, 36) -- #3a2a24
+		UIStroke.Color = Color3.fromRGB(58, 42, 36)
 		UIStroke.Thickness = 1
 		UIStroke.Transparency = 1
 		UIStroke.Parent = IndicatorFrame
@@ -6914,7 +6914,7 @@ function Fatality:CreateIndicator(Config)
 		FrameLayout.Padding = UDim.new(0, 8)
 		FrameLayout.Parent = IndicatorFrame
 
-		-- Icon Circle (Purple/Violet gradient)
+		-- Icon Circle
 		local IconCircle = Instance.new("Frame")
 		IconCircle.Name = "IconCircle"
 		IconCircle.Parent = IndicatorFrame
@@ -6940,7 +6940,7 @@ function Fatality:CreateIndicator(Config)
 		IconGradient.Rotation = 45
 		IconGradient.Parent = IconCircle
 
-		-- Icon Image (Light silhouette)
+		-- Icon Image - FIXED: используем rbxassetid формат
 		local IconImage = Instance.new("ImageLabel")
 		IconImage.Name = "Icon"
 		IconImage.Parent = IconCircle
@@ -6948,10 +6948,21 @@ function Fatality:CreateIndicator(Config)
 		IconImage.BackgroundTransparency = 1
 		IconImage.Position = UDim2.new(0.5, 0, 0.5, 0)
 		IconImage.Size = UDim2.new(0, 12, 0, 12)
-		IconImage.Image = Fatality:GetIcon(CurrentIcon)
 		IconImage.ImageColor3 = Color3.fromRGB(240, 240, 240)
 		IconImage.ImageTransparency = 1
 		IconImage.ZIndex = 153
+
+		-- Безопасная установка иконки
+		local function SafeSetIcon(iconName)
+			local iconId = Fatality:GetIcon(iconName)
+			if iconId and iconId ~= "" then
+				IconImage.Image = iconId
+			else
+				IconImage.Image = "rbxassetid://10747373176" -- fallback: user icon
+			end
+		end
+
+		SafeSetIcon(CurrentIcon)
 
 		-- Name Label
 		local NameLabel = Instance.new("TextLabel")
@@ -6962,7 +6973,7 @@ function Fatality:CreateIndicator(Config)
 		NameLabel.AutomaticSize = Enum.AutomaticSize.X
 		NameLabel.FontFace = Fatality.FontSemiBold
 		NameLabel.Text = CurrentName
-		NameLabel.TextColor3 = Color3.fromRGB(224, 224, 224) -- #e0e0e0
+		NameLabel.TextColor3 = Color3.fromRGB(224, 224, 224)
 		NameLabel.TextSize = 12
 		NameLabel.TextTransparency = 1
 		NameLabel.ZIndex = 152
@@ -6983,7 +6994,7 @@ function Fatality:CreateIndicator(Config)
 			end
 		end)
 
-		-- Update gradient color
+		-- Update gradient
 		local function UpdateGradient(color)
 			IconGradient.Color = ColorSequence.new({
 				ColorSequenceKeypoint.new(0, color),
@@ -6995,7 +7006,7 @@ function Fatality:CreateIndicator(Config)
 			})
 		end
 
-		-- Show indicator
+		-- Show
 		function IndicatorObject:_Show()
 			IndicatorFrame.Visible = true
 
@@ -7016,7 +7027,7 @@ function Fatality:CreateIndicator(Config)
 			})
 		end
 
-		-- Hide indicator
+		-- Hide
 		function IndicatorObject:_Hide()
 			Fatality:CreateAnimation(IndicatorFrame, 0.25, {
 				BackgroundTransparency = 1
@@ -7041,7 +7052,7 @@ function Fatality:CreateIndicator(Config)
 			end)
 		end
 
-		-- Public methods
+		-- Methods
 		function IndicatorObject:SetEnabled(enabled)
 			IndicatorObject._IsEnabled = enabled
 
@@ -7067,7 +7078,7 @@ function Fatality:CreateIndicator(Config)
 
 		function IndicatorObject:SetIcon(icon)
 			CurrentIcon = icon
-			IconImage.Image = Fatality:GetIcon(icon)
+			SafeSetIcon(icon)
 		end
 
 		function IndicatorObject:SetIconColor(color)
@@ -7099,7 +7110,7 @@ function Fatality:CreateIndicator(Config)
 			end
 		end
 
-		-- Keybind handling
+		-- Keybind
 		if CurrentKeybind then
 			UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				if gameProcessed then return end
@@ -7136,7 +7147,7 @@ function Fatality:CreateIndicator(Config)
 			end
 		end
 
-		-- Initialize
+		-- Init
 		if IndicatorObject._IsEnabled and IsVisible then
 			IndicatorObject:_Show()
 		end
