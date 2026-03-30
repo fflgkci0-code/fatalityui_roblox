@@ -6364,6 +6364,34 @@ function Fatality.new(Window: Window)
 		ToggleUI(b);
 	end;
 
+	Fatal._IndicatorContainer = nil;
+
+	function Fatal:CreateIndicatorContainer(Config)
+		if Fatal._IndicatorContainer then
+			return Fatal._IndicatorContainer
+		end
+		
+		Fatal._IndicatorContainer = Fatality:CreateIndicator(Config)
+		return Fatal._IndicatorContainer
+	end
+
+	function Fatal:AddIndicator(Config)
+		if not Fatal._IndicatorContainer then
+			Fatal._IndicatorContainer = Fatality:CreateIndicator({
+				Title = Window.Name,
+				Position = UDim2.new(0, 10, 0.5, 0),
+				ShowTitle = true,
+				Draggable = true
+			})
+		end
+		
+		return Fatal._IndicatorContainer:AddIndicator(Config)
+	end
+
+	function Fatal:GetIndicatorContainer()
+		return Fatal._IndicatorContainer
+	end
+
 	ToggleUI(true);
 
 	return Fatal;
@@ -6798,7 +6826,7 @@ function Fatality:CreateIndicator(Config)
 	Config.ShowTitle = (Config.ShowTitle == nil and true) or Config.ShowTitle;
 	Config.Draggable = (Config.Draggable == nil and true) or Config.Draggable;
 
-	local IndicatorContainer = {};
+	local IndicatorContainerLib = {};
 	local Indicators = {};
 	local IsVisible = true;
 
@@ -6827,7 +6855,7 @@ function Fatality:CreateIndicator(Config)
 	MainFrame.Position = Config.Position
 	MainFrame.Size = UDim2.new(0, 150, 0, 25)
 	MainFrame.AutomaticSize = Enum.AutomaticSize.Y
-	MainFrame.ZIndex = 50
+	MainFrame.ZIndex = 150
 
 	local UICorner = Instance.new("UICorner")
 	UICorner.CornerRadius = UDim.new(0, 4)
@@ -6841,14 +6869,15 @@ function Fatality:CreateIndicator(Config)
 	TitleLabel.Name = Fatality:RandomString()
 	TitleLabel.Parent = MainFrame
 	TitleLabel.BackgroundTransparency = 1
-	TitleLabel.Position = UDim2.new(0, 0, 0, 0)
-	TitleLabel.Size = UDim2.new(1, 0, 0, 20)
+	TitleLabel.Position = UDim2.new(0, 8, 0, 2)
+	TitleLabel.Size = UDim2.new(1, -16, 0, 18)
 	TitleLabel.FontFace = Fatality.FontSemiBold
 	TitleLabel.Text = Config.Title
 	TitleLabel.TextColor3 = Fatality.Colors.Main
 	TitleLabel.TextSize = 11
+	TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 	TitleLabel.TextStrokeTransparency = 0.8
-	TitleLabel.ZIndex = 51
+	TitleLabel.ZIndex = 151
 	TitleLabel.Visible = Config.ShowTitle
 
 	IndicatorList.Name = Fatality:RandomString()
@@ -6857,7 +6886,7 @@ function Fatality:CreateIndicator(Config)
 	IndicatorList.Position = UDim2.new(0, 0, 0, Config.ShowTitle and 20 or 5)
 	IndicatorList.Size = UDim2.new(1, 0, 0, 0)
 	IndicatorList.AutomaticSize = Enum.AutomaticSize.Y
-	IndicatorList.ZIndex = 51
+	IndicatorList.ZIndex = 151
 
 	UIListLayout.Parent = IndicatorList
 	UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
@@ -6871,7 +6900,13 @@ function Fatality:CreateIndicator(Config)
 	-- Auto-resize
 	UIListLayout:GetPropertyChangedSignal('AbsoluteContentSize'):Connect(function()
 		local baseHeight = Config.ShowTitle and 25 or 10
-		MainFrame.Size = UDim2.new(0, 150, 0, UIListLayout.AbsoluteContentSize.Y + baseHeight)
+		local contentHeight = UIListLayout.AbsoluteContentSize.Y
+		
+		if contentHeight > 0 then
+			MainFrame.Size = UDim2.new(0, 150, 0, contentHeight + baseHeight)
+		else
+			MainFrame.Size = UDim2.new(0, 150, 0, baseHeight)
+		end
 	end)
 
 	-- Draggable
@@ -6879,11 +6914,18 @@ function Fatality:CreateIndicator(Config)
 		Fatality:Drag(MainFrame, MainFrame, 0.1)
 	end
 
-	-- Visibility toggle
-	local function SetContainerVisible(visible)
-		IsVisible = visible
+	-- Visibility functions
+	local function UpdateContainerVisibility()
+		local hasVisibleIndicators = false
+		for _, indicator in pairs(Indicators) do
+			if indicator._IsEnabled then
+				hasVisibleIndicators = true
+				break
+			end
+		end
 		
-		if visible then
+		if hasVisibleIndicators and IsVisible then
+			MainFrame.Visible = true
 			Fatality:CreateAnimation(MainFrame, 0.3, {
 				BackgroundTransparency = 0.3
 			})
@@ -6893,13 +6935,7 @@ function Fatality:CreateIndicator(Config)
 			Fatality:CreateAnimation(TitleLabel, 0.3, {
 				TextTransparency = 0
 			})
-			
-			for _, indicator in pairs(Indicators) do
-				if indicator.Enabled then
-					indicator:_Show()
-				end
-			end
-		else
+		elseif not hasVisibleIndicators then
 			Fatality:CreateAnimation(MainFrame, 0.3, {
 				BackgroundTransparency = 1
 			})
@@ -6909,193 +6945,174 @@ function Fatality:CreateIndicator(Config)
 			Fatality:CreateAnimation(TitleLabel, 0.3, {
 				TextTransparency = 1
 			})
-			
-			for _, indicator in pairs(Indicators) do
-				indicator:_Hide()
-			end
 		end
 	end
 
-	-- AddIndicator function
-	function IndicatorContainer:AddIndicator(IndicatorConfig)
+	-- AddIndicator method
+	function IndicatorContainerLib:AddIndicator(IndicatorConfig)
 		IndicatorConfig = IndicatorConfig or {}
 		IndicatorConfig.Name = IndicatorConfig.Name or "Indicator"
-		IndicatorConfig.Enabled = (IndicatorConfig.Enabled == nil and false) or IndicatorConfig.Enabled
+		IndicatorConfig.Enabled = IndicatorConfig.Enabled or false
 		IndicatorConfig.Value = IndicatorConfig.Value or nil
 		IndicatorConfig.Color = IndicatorConfig.Color or Fatality.Colors.Main
 		IndicatorConfig.Keybind = IndicatorConfig.Keybind or nil
-		IndicatorConfig.Mode = IndicatorConfig.Mode or "Toggle" -- "Hold" | "Toggle" | "Always"
+		IndicatorConfig.Mode = IndicatorConfig.Mode or "Toggle"
 
 		local IndicatorObject = {}
-		local IsEnabled = IndicatorConfig.Enabled
+		IndicatorObject._IsEnabled = IndicatorConfig.Enabled
+		
 		local CurrentValue = IndicatorConfig.Value
 		local CurrentColor = IndicatorConfig.Color
 		local CurrentMode = IndicatorConfig.Mode
 		local CurrentName = IndicatorConfig.Name
+		local CurrentKeybind = IndicatorConfig.Keybind
 
 		-- UI Elements
 		local IndicatorFrame = Instance.new("Frame")
 		local NameLabel = Instance.new("TextLabel")
 		local ValueLabel = Instance.new("TextLabel")
 		local ModeLabel = Instance.new("TextLabel")
-		local KeybindLabel = Instance.new("TextLabel")
 
 		IndicatorFrame.Name = Fatality:RandomString()
 		IndicatorFrame.Parent = IndicatorList
 		IndicatorFrame.BackgroundTransparency = 1
 		IndicatorFrame.Size = UDim2.new(1, 0, 0, 14)
-		IndicatorFrame.ZIndex = 52
+		IndicatorFrame.ZIndex = 152
 		IndicatorFrame.Visible = false
 
 		NameLabel.Name = "Name"
 		NameLabel.Parent = IndicatorFrame
 		NameLabel.BackgroundTransparency = 1
-		NameLabel.Size = UDim2.new(0.5, 0, 1, 0)
+		NameLabel.Size = UDim2.new(0.6, 0, 1, 0)
 		NameLabel.FontFace = Fatality.FontSemiBold
-		NameLabel.Text = IndicatorConfig.Name
+		NameLabel.Text = CurrentName
 		NameLabel.TextColor3 = CurrentColor
 		NameLabel.TextSize = 11
 		NameLabel.TextXAlignment = Enum.TextXAlignment.Left
 		NameLabel.TextTransparency = 1
-		NameLabel.ZIndex = 53
+		NameLabel.ZIndex = 153
 
 		ValueLabel.Name = "Value"
 		ValueLabel.Parent = IndicatorFrame
 		ValueLabel.AnchorPoint = Vector2.new(1, 0)
 		ValueLabel.BackgroundTransparency = 1
 		ValueLabel.Position = UDim2.new(1, 0, 0, 0)
-		ValueLabel.Size = UDim2.new(0.5, 0, 1, 0)
+		ValueLabel.Size = UDim2.new(0.4, 0, 1, 0)
 		ValueLabel.FontFace = Fatality.FontSemiBold
 		ValueLabel.Text = CurrentValue or ""
-		ValueLabel.TextColor3 = Color3.fromRGB(200, 200, 200)
+		ValueLabel.TextColor3 = Color3.fromRGB(180, 180, 180)
 		ValueLabel.TextSize = 10
 		ValueLabel.TextXAlignment = Enum.TextXAlignment.Right
 		ValueLabel.TextTransparency = 1
-		ValueLabel.ZIndex = 53
+		ValueLabel.ZIndex = 153
 
 		ModeLabel.Name = "Mode"
 		ModeLabel.Parent = IndicatorFrame
 		ModeLabel.AnchorPoint = Vector2.new(1, 0)
 		ModeLabel.BackgroundTransparency = 1
-		ModeLabel.Position = UDim2.new(1, -40, 0, 0)
-		ModeLabel.Size = UDim2.new(0, 35, 1, 0)
+		ModeLabel.Position = UDim2.new(1, 0, 0, 0)
+		ModeLabel.Size = UDim2.new(0.4, 0, 1, 0)
 		ModeLabel.FontFace = Fatality.FontSemiBold
 		ModeLabel.Text = ""
-		ModeLabel.TextColor3 = Color3.fromRGB(150, 150, 150)
+		ModeLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
 		ModeLabel.TextSize = 9
 		ModeLabel.TextXAlignment = Enum.TextXAlignment.Right
 		ModeLabel.TextTransparency = 1
-		ModeLabel.ZIndex = 53
+		ModeLabel.ZIndex = 153
 
-		KeybindLabel.Name = "Keybind"
-		KeybindLabel.Parent = IndicatorFrame
-		KeybindLabel.AnchorPoint = Vector2.new(1, 0)
-		KeybindLabel.BackgroundTransparency = 1
-		KeybindLabel.Position = UDim2.new(1, 0, 0, 0)
-		KeybindLabel.Size = UDim2.new(0, 30, 1, 0)
-		KeybindLabel.FontFace = Fatality.FontSemiBold
-		KeybindLabel.Text = ""
-		KeybindLabel.TextColor3 = Color3.fromRGB(120, 120, 120)
-		KeybindLabel.TextSize = 9
-		KeybindLabel.TextXAlignment = Enum.TextXAlignment.Right
-		KeybindLabel.TextTransparency = 1
-		KeybindLabel.ZIndex = 53
-
-		-- Helper functions
+		-- Helper: Get key name
 		local function GetKeyName(key)
 			if not key then return "" end
 			
 			local Keys = {
-				LeftControl = "LCtrl",
-				RightControl = "RCtrl",
-				LeftShift = "LShift",
-				RightShift = "RShift",
-				LeftAlt = "LAlt",
-				RightAlt = "RAlt",
+				LeftControl = "LCtrl", RightControl = "RCtrl",
+				LeftShift = "LShift", RightShift = "RShift",
+				LeftAlt = "LAlt", RightAlt = "RAlt",
+				One = "1", Two = "2", Three = "3", Four = "4", Five = "5",
+				Six = "6", Seven = "7", Eight = "8", Nine = "9", Zero = "0",
 			}
 			
 			if typeof(key) == "EnumItem" then
 				return "[" .. (Keys[key.Name] or key.Name) .. "]"
 			else
-				return "[" .. tostring(key) .. "]"
+				return "[" .. (Keys[tostring(key)] or tostring(key)) .. "]"
 			end
 		end
 
+		-- Update display
 		local function UpdateDisplay()
 			NameLabel.Text = CurrentName
 			NameLabel.TextColor3 = CurrentColor
 			
+			local displayText = ""
+			
 			if CurrentValue then
-				ValueLabel.Text = tostring(CurrentValue)
-				ValueLabel.Visible = true
-				ModeLabel.Position = UDim2.new(1, -40, 0, 0)
-			else
-				ValueLabel.Text = ""
-				ValueLabel.Visible = false
-				ModeLabel.Position = UDim2.new(1, 0, 0, 0)
+				displayText = tostring(CurrentValue)
 			end
 			
 			if CurrentMode and CurrentMode ~= "Toggle" then
-				ModeLabel.Text = "[" .. CurrentMode .. "]"
-			else
-				ModeLabel.Text = ""
+				if displayText ~= "" then
+					displayText = displayText .. " [" .. CurrentMode .. "]"
+				else
+					displayText = "[" .. CurrentMode .. "]"
+				end
 			end
 			
-			KeybindLabel.Text = GetKeyName(IndicatorConfig.Keybind)
+			if CurrentKeybind then
+				if displayText ~= "" then
+					displayText = displayText .. " " .. GetKeyName(CurrentKeybind)
+				else
+					displayText = GetKeyName(CurrentKeybind)
+				end
+			end
+			
+			ValueLabel.Text = displayText
 		end
 
+		-- Show indicator
 		function IndicatorObject:_Show()
 			IndicatorFrame.Visible = true
 			
-			Fatality:CreateAnimation(NameLabel, 0.25, {
+			Fatality:CreateAnimation(NameLabel, 0.2, {
 				TextTransparency = 0
 			})
-			Fatality:CreateAnimation(ValueLabel, 0.25, {
-				TextTransparency = 0.3
+			Fatality:CreateAnimation(ValueLabel, 0.2, {
+				TextTransparency = 0.4
 			})
-			Fatality:CreateAnimation(ModeLabel, 0.25, {
-				TextTransparency = 0.5
-			})
-			Fatality:CreateAnimation(KeybindLabel, 0.25, {
-				TextTransparency = 0.6
-			})
+			
+			UpdateContainerVisibility()
 		end
 
+		-- Hide indicator
 		function IndicatorObject:_Hide()
-			Fatality:CreateAnimation(NameLabel, 0.25, {
+			Fatality:CreateAnimation(NameLabel, 0.2, {
 				TextTransparency = 1
 			})
-			Fatality:CreateAnimation(ValueLabel, 0.25, {
-				TextTransparency = 1
-			})
-			Fatality:CreateAnimation(ModeLabel, 0.25, {
-				TextTransparency = 1
-			})
-			Fatality:CreateAnimation(KeybindLabel, 0.25, {
+			Fatality:CreateAnimation(ValueLabel, 0.2, {
 				TextTransparency = 1
 			})
 			
-			task.delay(0.25, function()
-				if not IsEnabled then
+			task.delay(0.2, function()
+				if not IndicatorObject._IsEnabled then
 					IndicatorFrame.Visible = false
+					UpdateContainerVisibility()
 				end
 			end)
 		end
 
+		-- Public methods
 		function IndicatorObject:SetEnabled(enabled)
-			local wasEnabled = IsEnabled
-			IsEnabled = enabled
-			IndicatorObject.Enabled = enabled
+			IndicatorObject._IsEnabled = enabled
 			
 			if enabled and IsVisible then
 				self:_Show()
-			elseif not enabled then
+			else
 				self:_Hide()
 			end
 		end
 
 		function IndicatorObject:GetEnabled()
-			return IsEnabled
+			return IndicatorObject._IsEnabled
 		end
 
 		function IndicatorObject:SetValue(value)
@@ -7125,7 +7142,7 @@ function Fatality:CreateIndicator(Config)
 		end
 
 		function IndicatorObject:SetKeybind(key)
-			IndicatorConfig.Keybind = key
+			CurrentKeybind = key
 			UpdateDisplay()
 		end
 
@@ -7138,79 +7155,100 @@ function Fatality:CreateIndicator(Config)
 					break
 				end
 			end
+			
+			UpdateContainerVisibility()
 		end
 
 		-- Keybind handling
-		if IndicatorConfig.Keybind then
+		if CurrentKeybind then
 			UserInputService.InputBegan:Connect(function(input, gameProcessed)
 				if gameProcessed then return end
 				
 				local keyMatch = false
-				if typeof(IndicatorConfig.Keybind) == "EnumItem" then
-					keyMatch = input.KeyCode == IndicatorConfig.Keybind
+				if typeof(CurrentKeybind) == "EnumItem" then
+					keyMatch = input.KeyCode == CurrentKeybind
 				else
-					keyMatch = input.KeyCode.Name == IndicatorConfig.Keybind
+					keyMatch = input.KeyCode.Name == tostring(CurrentKeybind)
 				end
 				
 				if keyMatch then
 					if CurrentMode == "Hold" then
 						IndicatorObject:SetEnabled(true)
 					elseif CurrentMode == "Toggle" then
-						IndicatorObject:SetEnabled(not IsEnabled)
+						IndicatorObject:SetEnabled(not IndicatorObject._IsEnabled)
 					end
 				end
 			end)
 
-			UserInputService.InputEnded:Connect(function(input, gameProcessed)
-				if CurrentMode == "Hold" then
+			if CurrentMode == "Hold" then
+				UserInputService.InputEnded:Connect(function(input)
 					local keyMatch = false
-					if typeof(IndicatorConfig.Keybind) == "EnumItem" then
-						keyMatch = input.KeyCode == IndicatorConfig.Keybind
+					if typeof(CurrentKeybind) == "EnumItem" then
+						keyMatch = input.KeyCode == CurrentKeybind
 					else
-						keyMatch = input.KeyCode.Name == IndicatorConfig.Keybind
+						keyMatch = input.KeyCode.Name == tostring(CurrentKeybind)
 					end
 					
 					if keyMatch then
 						IndicatorObject:SetEnabled(false)
 					end
-				end
-			end)
+				end)
+			end
 		end
 
 		-- Initialize
 		UpdateDisplay()
 		
-		if IsEnabled and IsVisible then
+		if IndicatorObject._IsEnabled and IsVisible then
 			IndicatorObject:_Show()
 		end
 
-		IndicatorObject.Enabled = IsEnabled
 		table.insert(Indicators, IndicatorObject)
+		UpdateContainerVisibility()
 
 		return IndicatorObject
 	end
 
-	function IndicatorContainer:SetVisible(visible)
-		SetContainerVisible(visible)
+	-- Container methods
+	function IndicatorContainerLib:SetVisible(visible)
+		IsVisible = visible
+		
+		if visible then
+			for _, indicator in pairs(Indicators) do
+				if indicator._IsEnabled then
+					indicator:_Show()
+				end
+			end
+		else
+			for _, indicator in pairs(Indicators) do
+				indicator:_Hide()
+			end
+		end
+		
+		UpdateContainerVisibility()
 	end
 
-	function IndicatorContainer:SetPosition(position)
+	function IndicatorContainerLib:SetPosition(position)
 		MainFrame.Position = position
 	end
 
-	function IndicatorContainer:SetTitle(title)
+	function IndicatorContainerLib:SetTitle(title)
 		TitleLabel.Text = title
 	end
 
-	function IndicatorContainer:Destroy()
+	function IndicatorContainerLib:Destroy()
 		IndicatorGui:Destroy()
 	end
 
-	function IndicatorContainer:GetIndicators()
+	function IndicatorContainerLib:GetIndicators()
 		return Indicators
 	end
 
-	return IndicatorContainer
+	-- Initial visibility
+	MainFrame.Visible = false
+	UpdateContainerVisibility()
+
+	return IndicatorContainerLib
 end
 
 Fatality.FATALITY_PID = Fatality:RandomString();
