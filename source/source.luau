@@ -4475,7 +4475,7 @@ function Fatality.new(Window: Window)
 	HeaderText.Size = UDim2.new(0, 100, 0.699999988, 0)
 	HeaderText.ZIndex = 4
 	HeaderText.Font = Enum.Font.GothamBold
-	HeaderText.Text = "F"
+	HeaderText.Text = "G"
 	HeaderText.TextColor3 = Color3.fromRGB(229, 229, 229)
 	HeaderText.TextSize = 21.000
 	HeaderText.TextStrokeColor3 = Color3.fromRGB(205, 67, 218)
