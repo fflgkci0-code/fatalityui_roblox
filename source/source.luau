@@ -4472,10 +4472,10 @@ function Fatality.new(Window: Window)
 	HeaderText.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	HeaderText.BorderSizePixel = 0
 	HeaderText.Position = UDim2.new(0, 5, 0.5, 0)
-	HeaderText.Size = UDim2.new(0, 100, 0.199999988, 0)
+	HeaderText.Size = UDim2.new(0, 100, 0.699999988, 0)
 	HeaderText.ZIndex = 4
 	HeaderText.Font = Enum.Font.GothamBold
-	HeaderText.Text = Window.Name
+	HeaderText.Text = "F"
 	HeaderText.TextColor3 = Color3.fromRGB(229, 229, 229)
 	HeaderText.TextSize = 21.000
 	HeaderText.TextStrokeColor3 = Color3.fromRGB(205, 67, 218)
