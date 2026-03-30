@@ -4448,7 +4448,7 @@ function Fatality.new(Window: Window)
 	Header.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
 	Header.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Header.BorderSizePixel = 0
-	Header.Size = UDim2.new(1, 0, 0, 40)
+	Header.Size = UDim2.new(1, 0, 0, 20)
 	Header.ZIndex = 2
 
 	HeaderLine.Name = Fatality:RandomString()
