@@ -6822,7 +6822,7 @@ function Fatality:CreateIndicator(Config)
 	local Layout = Instance.new("UIListLayout")
 	Layout.Parent = Container
 	Layout.SortOrder = Enum.SortOrder.LayoutOrder
-	Layout.Padding = UDim.new(0, 4)
+	Layout.Padding = UDim.new(0, 2)
 	Layout.HorizontalAlignment = Enum.HorizontalAlignment.Left
 
 	if Config.Draggable then
