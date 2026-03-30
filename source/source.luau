@@ -4448,7 +4448,7 @@ function Fatality.new(Window: Window)
 	Header.BackgroundColor3 = Color3.fromRGB(21, 21, 21)
 	Header.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	Header.BorderSizePixel = 0
-	Header.Size = UDim2.new(1, 0, 0, 20)
+	Header.Size = UDim2.new(1, 0, 0, 40)
 	Header.ZIndex = 2
 
 	HeaderLine.Name = Fatality:RandomString()
@@ -4472,7 +4472,7 @@ function Fatality.new(Window: Window)
 	HeaderText.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	HeaderText.BorderSizePixel = 0
 	HeaderText.Position = UDim2.new(0, 5, 0.5, 0)
-	HeaderText.Size = UDim2.new(0, 100, 0.699999988, 0)
+	HeaderText.Size = UDim2.new(0, 100, 0.199999988, 0)
 	HeaderText.ZIndex = 4
 	HeaderText.Font = Enum.Font.GothamBold
 	HeaderText.Text = Window.Name
