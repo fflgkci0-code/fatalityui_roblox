@@ -315,6 +315,9 @@ Fatality.Version = '1.6';
 Fatality.Folder = nil :: string?;
 Fatality.Lucide = {};
 Fatality.IconGitHubBase = "" :: string;
+Fatality.IconSearchName = "icon_search" :: string;
+Fatality.IconConfigsName = "icon_configs" :: string;
+Fatality.IconInfoName = "icon_info" :: string;
 
 Fatality.WindowFlags = {};
 
@@ -498,6 +501,14 @@ function Fatality:GetIcon(name : string) : string
 		end;
 	end;
 	return "";
+end;
+
+function Fatality:ResolveIcon(name: string, fallback: string): string
+	local u = Fatality:GetIcon(name);
+	if u ~= "" then
+		return u;
+	end;
+	return fallback;
 end;
 
 function Fatality:SetIcon(name : string, value : string)
@@ -3107,14 +3118,27 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 	UICorner_3.CornerRadius = UDim.new(0, 3)
 	UICorner_3.Parent = InputFrame
 
+	local ConfigSearchIcon = Instance.new("ImageLabel")
+	ConfigSearchIcon.Name = Fatality:RandomString()
+	ConfigSearchIcon.Parent = InputFrame
+	ConfigSearchIcon.AnchorPoint = Vector2.new(0, 0.5)
+	ConfigSearchIcon.BackgroundTransparency = 1.000
+	ConfigSearchIcon.BorderSizePixel = 0
+	ConfigSearchIcon.Position = UDim2.new(0, 4, 0.5, 0)
+	ConfigSearchIcon.Size = UDim2.new(0, 12, 0, 12)
+	ConfigSearchIcon.ZIndex = 209
+	ConfigSearchIcon.ScaleType = Enum.ScaleType.Fit
+	ConfigSearchIcon.Image = Fatality:ResolveIcon(Fatality.IconSearchName, "rbxassetid://10734943674");
+	ConfigSearchIcon.ImageTransparency = 0.35
+
 	TextBox.Parent = InputFrame
 	TextBox.AnchorPoint = Vector2.new(0.5, 0.5)
 	TextBox.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 	TextBox.BackgroundTransparency = 1.000
 	TextBox.BorderColor3 = Color3.fromRGB(0, 0, 0)
 	TextBox.BorderSizePixel = 0
-	TextBox.Position = UDim2.new(0.5, 0, 0.5, 0)
-	TextBox.Size = UDim2.new(1, -10, 1, -1)
+	TextBox.Position = UDim2.new(0.5, 7, 0.5, 0)
+	TextBox.Size = UDim2.new(1, -24, 1, -1)
 	TextBox.ZIndex = 209
 	TextBox.FontFace = Fatality.FontSemiBold
 	TextBox.Text = ""
@@ -3133,7 +3157,7 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 	AddConfigButton.Position = UDim2.new(1, 8, 0.5, 0)
 	AddConfigButton.Size = UDim2.new(0, 15, 0, 15)
 	AddConfigButton.ZIndex = 209
-	AddConfigButton.Image = "rbxassetid://10734923868"
+	AddConfigButton.Image = Fatality:ResolveIcon(Fatality.IconConfigsName, "rbxassetid://10734923868")
 	AddConfigButton.ImageTransparency = 0.500
 
 	UICorner_4.CornerRadius = UDim.new(1, 0)
@@ -3149,7 +3173,7 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 	GetConfigButton.Position = UDim2.new(1, -8, 0, 10)
 	GetConfigButton.Size = UDim2.new(0, 15, 0, 15)
 	GetConfigButton.ZIndex = 209
-	GetConfigButton.Image = "rbxassetid://10723387265"
+	GetConfigButton.Image = Fatality:ResolveIcon(Fatality.IconConfigsName, "rbxassetid://10723387265")
 	GetConfigButton.ImageTransparency = 0.500
 
 	UICorner_5.CornerRadius = UDim.new(1, 0)
@@ -3165,7 +3189,7 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 	SaveConfigButton.Position = UDim2.new(1, -8, 0, 28)
 	SaveConfigButton.Size = UDim2.new(0, 15, 0, 15)
 	SaveConfigButton.ZIndex = 209
-	SaveConfigButton.Image = "rbxassetid://10734941499"
+	SaveConfigButton.Image = Fatality:ResolveIcon(Fatality.IconConfigsName, "rbxassetid://10734941499")
 	SaveConfigButton.ImageTransparency = 0.500
 
 	UICorner_6.CornerRadius = UDim.new(1, 0)
@@ -3272,6 +3296,18 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 		Element = nil;
 	};
 
+	local function applyConfigSearchFilter()
+		local q = string.lower(TextBox.Text);
+		for _, child in ScrollingFrame:GetChildren() do
+			if child:IsA("TextButton") then
+				local label = string.lower((child.Text:gsub("^%s+", ""):gsub("%s+$", "")));
+				child.Visible = q == "" or string.find(label, q, 1, true) ~= nil;
+			end;
+		end;
+	end;
+
+	TextBox:GetPropertyChangedSignal("Text"):Connect(applyConfigSearchFilter);
+
 	local res;
 	res = Fatality:CreateResponse({
 		SetFiles = function(configs,bypass)
@@ -3316,6 +3352,8 @@ function Fatality:CreateConfigWindow(Root: ScreenGui , Fatal , Button: ImageButt
 					button.Text = "  "..tostring(v);
 				end);
 			end;
+
+			applyConfigSearchFilter();
 		end,
 
 		ReloadConfig = function()
@@ -5152,7 +5190,7 @@ function Fatality.new(Window: Window)
 		InfoButton.Position = UDim2.new(1, -5, 0.5, 0)
 		InfoButton.Size = UDim2.new(0, 16, 0, 16)
 		InfoButton.ZIndex = 4
-		InfoButton.Image = "rbxassetid://10723415903"
+		InfoButton.Image = Fatality:ResolveIcon(Fatality.IconInfoName, "rbxassetid://10723415903")
 		InfoButton.ImageTransparency = 0.500
 
 		SearchButton.Name = Fatality:RandomString()
@@ -5165,7 +5203,7 @@ function Fatality.new(Window: Window)
 		SearchButton.Position = UDim2.new(0, 10, 0.5, 0)
 		SearchButton.Size = UDim2.new(0, 16, 0, 16)
 		SearchButton.ZIndex = 4
-		SearchButton.Image = "rbxassetid://10734943674"
+		SearchButton.Image = Fatality:ResolveIcon(Fatality.IconSearchName, "rbxassetid://10734943674")
 		SearchButton.ImageTransparency = 0.500
 
 		SaveButton.Name = Fatality:RandomString()
@@ -5178,7 +5216,7 @@ function Fatality.new(Window: Window)
 		SaveButton.Position = UDim2.new(0, 35, 0.5, 0)
 		SaveButton.Size = UDim2.new(0, 16, 0, 16)
 		SaveButton.ZIndex = 4
-		SaveButton.Image = "rbxassetid://10734941499"
+		SaveButton.Image = Fatality:ResolveIcon(Fatality.IconConfigsName, "rbxassetid://10734941499")
 		SaveButton.ImageTransparency = 0.500
 
 		Fatality:CreateHover(SaveButton,function(bool)
@@ -5695,7 +5733,7 @@ end;
 function Fatality:Loader(Config: Loader)
 	Config = Config or {};
 	Config.Name = Config.Name or "FATALITY";
-	Config.Duration = Config.Duration or 3.5;
+	Config.Duration = Config.Duration or 0;
 	Config.Scale = Config.Scale or 3;
 
 	local Blur = Instance.new('BlurEffect');
@@ -5754,8 +5792,6 @@ function Fatality:Loader(Config: Loader)
 	Fatality:CreateAnimation(BlackFrame,0.5,{
 		BackgroundTransparency = 0.7
 	}).Completed:Wait();
-
-	task.wait(0.5);
 
 	local UText = {
 		Y = 14,
@@ -5869,13 +5905,9 @@ function Fatality:Loader(Config: Loader)
 			Scale = Config.Scale;
 		});
 
-		task.wait(0.45);
-
 		Fatality:CreateAnimation(StartText,0.35,{
 			Position = UDim2.fromOffset(PosText[1].Frame.AbsolutePosition.X + (PosText[1].Frame.AbsoluteSize.X / 2),PosText[1].Frame.AbsolutePosition.Y + (PosText[1].Frame.AbsoluteSize.Y / 2) + math.abs(Loader.AbsolutePosition.Y))
 		})
-
-		task.wait(0.5);
 
 		for i,v in next , PosText do
 			if i > 1 then
@@ -5886,7 +5918,9 @@ function Fatality:Loader(Config: Loader)
 			end;
 		end;
 
-		task.wait((Config.Duration - 0.5) + 0.65);
+		if Config.Duration > 0 then
+			task.wait(Config.Duration);
+		end;
 
 		Fatality:CreateAnimation(StartText,1.5,{
 			TextTransparency = 1
@@ -5906,7 +5940,7 @@ function Fatality:Loader(Config: Loader)
 			BackgroundTransparency = 1
 		})
 
-		task.wait(1.65);
+		task.wait();
 
 		Loader:Destroy();
 	end;
